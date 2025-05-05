@@ -18,7 +18,7 @@ struct Cli {
 enum Commands {
     /// Create a new JasDB file with header
     Create {
-        #[arg(short, long, default_value = "jasdb.jasdb")]
+        #[arg(short = 'p', long, default_value = "jasdb.jasdb")]
         file: String,
     },
 
@@ -30,7 +30,7 @@ enum Commands {
         #[arg(short, long)]
         data: String,
 
-        #[arg(short, long, default_value = "jasdb.jasdb")]
+        #[arg(short = 'p', long, default_value = "jasdb.jasdb")]
         file: String,
     },
 
@@ -42,7 +42,7 @@ enum Commands {
         #[arg(short, long)]
         filter: String,
 
-        #[arg(short, long, default_value = "jasdb.jasdb")]
+        #[arg(short = 'p', long, default_value = "jasdb.jasdb")]
         file: String,
     }
 }
