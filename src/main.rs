@@ -44,7 +44,34 @@ enum Commands {
 
         #[arg(short = 'p', long, default_value = "jasdb.jasdb")]
         file: String,
-    }
+    },
+
+    /// Update documents in a collection
+    Update {
+        #[arg(short, long)]
+        collection: String,
+
+        #[arg(short, long)]
+        filter: String,
+
+        #[arg(short, long)]
+        update: String,
+
+        #[arg(short = 'p', long, default_value = "jasdb.jasdb")]
+        file: String,
+    },
+
+    /// Delete documents from a collection
+    Delete {
+        #[arg(short, long)]
+        collection: String,
+
+        #[arg(short, long)]
+        filter: String,
+
+        #[arg(short = 'p', long, default_value = "jasdb.jasdb")]
+        file: String,
+    },
 }
 
 fn main() -> Result<()> {
@@ -64,6 +91,17 @@ fn main() -> Result<()> {
             let query: serde_json::Value = serde_json::from_str(&filter)?;
             let results = db::query(&file, &collection, &query)?;
             println!("📦 Results:\n{}", serde_json::to_string_pretty(&results)?);
+        }
+        Commands::Update { collection, filter, update, file } => {
+            let filter_json: serde_json::Value = serde_json::from_str(&filter)?;
+            let update_json: serde_json::Value = serde_json::from_str(&update)?;
+            let count = db::update(&file, &collection, &filter_json, &update_json)?;
+            println!("🔁 Updated {} document(s) in '{}'", count, collection);
+        }
+        Commands::Delete { collection, filter, file } => {
+            let filter_json: serde_json::Value = serde_json::from_str(&filter)?;
+            let count = db::delete(&file, &collection, &filter_json)?;
+            println!("🗑️ Deleted {} document(s) from '{}'", count, collection);
         }
     }
 
