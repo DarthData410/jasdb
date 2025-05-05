@@ -92,7 +92,7 @@ pub fn query(db_path: &str, collection: &str, filter: &Value) -> Result<Vec<Valu
     file.seek(SeekFrom::Start(start))?;
     let mut results = vec![];
 
-    while let Ok(mut len_buf) = read_exact_4(&mut file) {
+    while let Ok(len_buf) = read_exact_4(&mut file) {
         let len = u32::from_le_bytes(len_buf);
         let mut doc_buf = vec![0u8; len as usize];
         file.read_exact(&mut doc_buf)?;
@@ -199,7 +199,7 @@ pub fn delete(db_path: &str, collection: &str, filter: &Value) -> Result<usize> 
 
     file.seek(SeekFrom::Start(offset))?;
 
-    let mut new_docs = vec![];
+    let mut new_docs: Vec<Value> = vec![];
     let mut deleted = 0;
     let mut temp_buf = vec![];
 
