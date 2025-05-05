@@ -6,9 +6,10 @@ r#"
  \) /  o o  \ (/
   ' _   u   _ '
    \ '-----' /
-
-     JasDB
-  Powered by Rust!
+      JasDB
+ Powered by Rust!
+ 
+ https://github.com/DarthData410/jasdb
 "#
     );
 }
