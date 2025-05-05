@@ -92,8 +92,8 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::Create { file } => {
             db::create(&file)?;
-            println!("✅ Created new JasDB file: {}", file);
             utils::print_ferris();
+            println!("✅ Created new JasDB file: {}", file);
         }        
         Commands::Insert { collection, data, file } => {
             let doc: serde_json::Value = serde_json::from_str(&data)?;
