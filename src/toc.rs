@@ -48,6 +48,7 @@ pub fn set_collection_schema(
     collection: &str,
     schema: &Value,
 ) -> std::io::Result<()> {
+    file.seek(SeekFrom::Start(0))?; // Ensure clean load
     let mut toc = load_toc(file)?;
     let eof = file.seek(SeekFrom::End(0))?;
     let entry = toc.entry(collection.to_string()).or_insert(TocEntry {
@@ -57,4 +58,3 @@ pub fn set_collection_schema(
     entry.schema = Some(schema.clone());
     save_toc(file, &toc)
 }
-

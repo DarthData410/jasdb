@@ -3,8 +3,7 @@ use serde_json::Value;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
-
-use crate::toc::{TocEntry, TocMap, load_toc, save_toc};
+use crate::toc::{TocEntry, TocMap, load_toc, save_toc, set_collection_schema};
 
 const HEADER_MAGIC: &[u8] = b"JASDB01\n";
 const TOC_RESERVED_SIZE: usize = 1024;
@@ -185,7 +184,7 @@ pub fn set_schema(db_path: &str, collection: &str, schema: &Value) -> Result<()>
         anyhow::bail!("Invalid JasDB header");
     }
 
-    toc::set_collection_schema(&mut file, collection, schema)?;
+    set_collection_schema(&mut file, collection, schema)?;
     Ok(())
 }
 
