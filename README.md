@@ -58,4 +58,14 @@ Designed specifically for **Node.js microservices**, JasDB combines:
   - Hash/checksum
   - File signature
 
+---
+
+## Important JasDB semantics
+
+| Concept  | Equivalent In SQL | JasDB Term                |
+| -------- | ----------------- | ------------------------- |
+| Database | SQLite file       | `.jasdb` binary file      |
+| Table    | Table             | **Collection**            |
+| Row      | Row               | **Entry** or **Document** |
+| Column   | Field             | JSON key-path             |
 
