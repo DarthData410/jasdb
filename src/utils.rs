@@ -2,10 +2,10 @@
 pub fn print_ferris() {
     println!(
 r#"
-    _~^~^~_
-\\) /  o o  \\ (/
-  '_   u   _'
-  \\ '-----' /
+     _~^~^~_
+ \) /  o o  \ (/
+  ' _   u   _ '
+   \ '-----' /
 
      JasDB
   Powered by Rust!
