@@ -86,7 +86,7 @@ enum Commands {
     },
 
     /// Show version and banner
-    #[command(name = "version", alias = "v")]
+    #[command(name = "version", alias = "-v")]
     Version,
 }
 
