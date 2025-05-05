@@ -1,35 +1,49 @@
 use anyhow::Result;
 use serde_json::Value;
-use std::fs::{create_dir_all, OpenOptions};
-use std::io::Write;
+use std::fs::{OpenOptions};
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
-pub fn insert(collection: &str, doc: &Value) -> Result<()> {
-    let path = format!("./data/{}.jsonl", collection);
-    create_dir_all("./data")?;
-
+/// Inserts a JSON document into the specified collection
+/// in the given JasDB file. Appends in plain text (JSON lines format for now).
+pub fn insert(db_path: &str, collection: &str, doc: &Value) -> Result<()> {
+    // Open or create the .jasdb file for appending
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
-        .open(&path)?;
+        .open(db_path)?;
 
-    let line = serde_json::to_string(doc)? + "\n";
+    // For now, prefix each entry with the collection name
+    // This will be used to simulate collection segments
+    let line = format!("{{\"__collection\":\"{}\",\"doc\":{}}}\n", collection, serde_json::to_string(doc)?);
     file.write_all(line.as_bytes())?;
+
     Ok(())
 }
 
-pub fn query(collection: &str, _filter: &Value) -> Result<Vec<Value>> {
-    let path = format!("./data/{}.jsonl", collection);
-    if !Path::new(&path).exists() {
+/// Queries all documents from a given collection
+/// in the specified JasDB file. Filter is not yet implemented.
+pub fn query(db_path: &str, collection: &str, _filter: &Value) -> Result<Vec<Value>> {
+    if !Path::new(db_path).exists() {
         return Ok(vec![]);
     }
 
-    let data = std::fs::read_to_string(&path)?;
-    let mut results = vec![];
+    let mut file = OpenOptions::new()
+        .read(true)
+        .open(db_path)?;
 
-    for line in data.lines() {
-        if let Ok(val) = serde_json::from_str::<Value>(line) {
-            results.push(val);
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+
+    let mut results = Vec::new();
+
+    for line in contents.lines() {
+        if let Ok(root) = serde_json::from_str::<Value>(line) {
+            if root.get("__collection") == Some(&Value::String(collection.to_string())) {
+                if let Some(doc) = root.get("doc") {
+                    results.push(doc.clone());
+                }
+            }
         }
     }
 
