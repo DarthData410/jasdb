@@ -38,4 +38,7 @@ else
   exit 1
 fi
 
+echo "🧬 Hexdump of database:"
+hexdump -C $DBFILE | head -n 40
+
 echo "✅ All tests completed!"
