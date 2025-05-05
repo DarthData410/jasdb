@@ -35,6 +35,7 @@ pub fn insert(db_path: &str, collection: &str, doc: &Value) -> Result<()> {
 
     // ✅ Enforce schema if present
     if let Some(entry) = toc.get(collection) {
+        println!("🔎 Schema for '{}': {:?}", collection, entry.schema);
         if let Some(schema) = &entry.schema {
             if !crate::utils::validate_against_schema(doc, schema) {
                 anyhow::bail!("Document does not match collection schema");
