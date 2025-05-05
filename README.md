@@ -69,3 +69,44 @@ Designed specifically for **Node.js microservices**, JasDB combines:
 | Row      | Row               | **Entry** or **Document** |
 | Column   | Field             | JSON key-path             |
 
+---
+
+## CLI command examples
+
+# Create New DB:
+jasdb create -p json.jasdb
+
+# Expected Output:
+✅ Created new JasDB file: json.jasdb
+
+# Insert Document:
+jasdb insert -c apples -d '{"type":"Gala","price":1.99}' -p json.jasdb
+jasdb insert -c apples -d '{"type":"Fuji","price":2.50}' -p json.jasdb
+
+# Query Documents:
+jasdb find -c apples -f '{}' -p json.jasdb
+
+# Expected Output:
+[
+  {
+    "type": "Gala",
+    "price": 1.99
+  },
+  {
+    "type": "Fuji",
+    "price": 2.5
+  }
+]
+
+# Update Document:
+jasdb update -c apples -f '{"type":"Gala"}' -u '{"type":"Gala","price":2.25}' -p json.jasdb
+
+# Expected Output:
+🔄 Updated 1 document(s) in 'apples'
+
+# Delete Document:
+jasdb delete -c apples -f '{"type":"Fuji"}' -p json.jasdb
+
+# Expected Output:
+🗑️ Deleted 1 document(s) from 'apples'
+
