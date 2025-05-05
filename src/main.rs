@@ -9,10 +9,6 @@ use anyhow::Result;
 #[derive(Parser)]
 #[command(name = "jasdb", version = "0.1.0", about = "JasDB CLI")]
 struct Cli {
-    /// Optional path to the database file
-    #[arg(short, long, default_value = "jasdb.jasdb")]
-    file: String,
-
     #[command(subcommand)]
     command: Commands,
 }
@@ -21,7 +17,10 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Create a new JasDB file with header
-    Create,
+    Create {
+        #[arg(short, long, default_value = "jasdb.jasdb")]
+        file: String,
+    },
 
     /// Insert a JSON document into a collection
     Insert {
@@ -30,6 +29,9 @@ enum Commands {
 
         #[arg(short, long)]
         data: String,
+
+        #[arg(short, long, default_value = "jasdb.jasdb")]
+        file: String,
     },
 
     /// Query documents from a collection
@@ -39,26 +41,28 @@ enum Commands {
 
         #[arg(short, long)]
         filter: String,
+
+        #[arg(short, long, default_value = "jasdb.jasdb")]
+        file: String,
     }
 }
 
 fn main() -> Result<()> {
-    // Parse CLI input into the Cli struct
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Create => {
-            db::create(&cli.file)?;
-            println!("✅ Created new JasDB file: {}", &cli.file);
+        Commands::Create { file } => {
+            db::create(&file)?;
+            println!("✅ Created new JasDB file: {}", file);
         }
-        Commands::Insert { collection, data } => {
+        Commands::Insert { collection, data, file } => {
             let doc: serde_json::Value = serde_json::from_str(&data)?;
-            db::insert(&cli.file, &collection, &doc)?;
+            db::insert(&file, &collection, &doc)?;
             println!("✅ Document inserted into '{}'", collection);
         }
-        Commands::Find { collection, filter } => {
+        Commands::Find { collection, filter, file } => {
             let query: serde_json::Value = serde_json::from_str(&filter)?;
-            let results = db::query(&cli.file, &collection, &query)?;
+            let results = db::query(&file, &collection, &query)?;
             println!("📦 Results:\n{}", serde_json::to_string_pretty(&results)?);
         }
     }
