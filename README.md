@@ -22,27 +22,6 @@ Designed specifically for **Node.js microservices**, JasDB combines:
 
 ---
 
-## 🔧 Tech Stack
-
-- **Node.js** (LTS)
-- **Binary storage engine** (custom, MessagePack-based)
-- **SQLite3 (optional)** for metadata/indexing layer
-- **Express** (for API endpoints)
-- **BullMQ + Redis (optional)** for queued jobs
-- **PM2** integration for multi-instance orchestration
-
----
-
-## 🧱 Architecture Modes
-
-1. **Embedded Mode**  
-   Drop JasDB into your Node.js app — think of it like a secure, smarter `nedb`.
-
-2. **Service Mode (`jasd`)**  
-   Run as a daemon exposing API endpoints for microservices, with secure tokens + REST.
-
----
-
 ## 🗂️ Sample Use Cases
 
 - Secure storage for task metadata and event logs
