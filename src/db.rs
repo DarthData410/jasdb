@@ -1,165 +1,89 @@
 use anyhow::Result;
 use serde_json::Value;
-use std::fs::{OpenOptions};
-use std::io::{Read, Write};
+use std::collections::HashMap;
+use std::fs::{File, OpenOptions};
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
-/// Create a new JasDB file with header.
-/// Writes magic bytes to identify file format and version.
+const HEADER_MAGIC: &[u8] = b"JASDB01\n";
+const TOC_RESERVED_SIZE: usize = 1024; // Reserve 1KB for TOC block
+
+/// Create a new JasDB file with binary header and reserved TOC section
 pub fn create(db_path: &str) -> Result<()> {
     if Path::new(db_path).exists() {
         println!("⚠️ JasDB file already exists: {}", db_path);
         return Ok(());
     }
 
-    let mut file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open(db_path)?;
+    let mut file = File::create(db_path)?;
+    file.write_all(HEADER_MAGIC)?;
 
-    file.write_all(b"JASDB01\n")?;
+    let empty_toc = vec![0u8; TOC_RESERVED_SIZE];
+    file.write_all(&empty_toc)?;
+
     Ok(())
 }
 
-/// Inserts a JSON document into the specified collection
-/// in the given JasDB file. Appends in plain text (JSON lines format for now).
+/// Inserts a JSON document into the specified collection in binary format.
+/// Automatically updates the in-file TOC.
 pub fn insert(db_path: &str, collection: &str, doc: &Value) -> Result<()> {
     let mut file = OpenOptions::new()
-        .create(true)
-        .append(true)
+        .read(true)
+        .write(true)
         .open(db_path)?;
 
-    let line = format!(
-        "{{\"__collection\":\"{}\",\"doc\":{}}}\n",
-        collection,
-        serde_json::to_string(doc)?
-    );
+    // Verify header
+    let mut header = [0u8; 8];
+    file.read_exact(&mut header)?;
+    if &header != HEADER_MAGIC {
+        anyhow::bail!("Invalid JasDB header");
+    }
 
-    file.write_all(line.as_bytes())?;
+    // Read and parse TOC
+    let mut toc_buf = vec![0u8; TOC_RESERVED_SIZE];
+    file.read_exact(&mut toc_buf)?;
+    let mut toc: HashMap<String, u64> = bincode::deserialize(&toc_buf).unwrap_or_default();
+
+    // Seek to end to get offset
+    let offset = file.seek(SeekFrom::End(0))?;
+
+    // Serialize and write the document
+    let raw = serde_json::to_vec(doc)?;
+    let len = raw.len() as u32;
+    file.write_all(&len.to_le_bytes())?;
+    file.write_all(&raw)?;
+
+    // Update TOC if new collection
+    if !toc.contains_key(collection) {
+        toc.insert(collection.to_string(), offset);
+
+        // Re-seek to TOC and write back
+        file.seek(SeekFrom::Start(HEADER_MAGIC.len() as u64))?;
+        let toc_serialized = bincode::serialize(&toc)?;
+        let mut padded = toc_serialized;
+        padded.resize(TOC_RESERVED_SIZE, 0);
+        file.write_all(&padded)?;
+    }
+
     Ok(())
 }
 
-/// Queries all documents from a given collection
-/// in the specified JasDB file. Filter is not yet implemented.
-pub fn query(db_path: &str, collection: &str, _filter: &Value) -> Result<Vec<Value>> {
-    if !Path::new(db_path).exists() {
-        return Ok(vec![]);
-    }
-
-    let mut file = OpenOptions::new()
-        .read(true)
-        .open(db_path)?;
-
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-
-    let mut results = Vec::new();
-
-    for line in contents.lines() {
-        if let Ok(root) = serde_json::from_str::<Value>(line) {
-            if root.get("__collection") == Some(&Value::String(collection.to_string())) {
-                if let Some(doc) = root.get("doc") {
-                    results.push(doc.clone());
-                }
-            }
-        }
-    }
-
-    Ok(results)
+/// Placeholder for query logic
+pub fn query(_db_path: &str, _collection: &str, _filter: &Value) -> Result<Vec<Value>> {
+    anyhow::bail!("Query not yet implemented for binary format")
 }
 
-/// Updates matching documents in a collection by replacing them.
-/// Returns the count of updated documents.
-pub fn update(db_path: &str, collection: &str, filter: &Value, update: &Value) -> Result<usize> {
-    if !Path::new(db_path).exists() {
-        return Ok(0);
-    }
-
-    let mut file = OpenOptions::new()
-        .read(true)
-        .open(db_path)?;
-
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-
-    let mut new_lines = Vec::new();
-    let mut updated = 0;
-
-    for line in contents.lines() {
-        if let Ok(mut root) = serde_json::from_str::<Value>(line) {
-            if root.get("__collection") == Some(&Value::String(collection.to_string())) {
-                if let Some(doc) = root.get_mut("doc") {
-                    if filter_match(doc, filter) {
-                        *doc = update.clone();
-                        updated += 1;
-                    }
-                }
-            }
-            new_lines.push(serde_json::to_string(&root)?);
-        }
-    }
-
-    let mut file = OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .open(db_path)?;
-    file.write_all(new_lines.join("\n").as_bytes())?;
-    file.write_all(b"\n")?;
-
-    Ok(updated)
+/// Placeholder for update logic
+pub fn update(_db_path: &str, _collection: &str, _filter: &Value, _update: &Value) -> Result<usize> {
+    anyhow::bail!("Update not yet implemented for binary format")
 }
 
-/// Deletes matching documents from a collection.
-/// Returns the count of deleted documents.
-pub fn delete(db_path: &str, collection: &str, filter: &Value) -> Result<usize> {
-    if !Path::new(db_path).exists() {
-        return Ok(0);
-    }
-
-    let mut file = OpenOptions::new()
-        .read(true)
-        .open(db_path)?;
-
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-
-    let mut new_lines = Vec::new();
-    let mut deleted = 0;
-
-    for line in contents.lines() {
-        if let Ok(root) = serde_json::from_str::<Value>(line) {
-            if root.get("__collection") == Some(&Value::String(collection.to_string())) {
-                if let Some(doc) = root.get("doc") {
-                    if filter_match(doc, filter) {
-                        deleted += 1;
-                        continue; // Skip this line (i.e., delete it)
-                    }
-                }
-            }
-            new_lines.push(serde_json::to_string(&root)?);
-        }
-    }
-
-    let mut file = OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .open(db_path)?;
-    file.write_all(new_lines.join("\n").as_bytes())?;
-    file.write_all(b"\n")?;
-
-    Ok(deleted)
+/// Placeholder for delete logic
+pub fn delete(_db_path: &str, _collection: &str, _filter: &Value) -> Result<usize> {
+    anyhow::bail!("Delete not yet implemented for binary format")
 }
 
-/// Basic filter matcher: checks if all keys in filter equal doc[key]
-fn filter_match(doc: &Value, filter: &Value) -> bool {
-    if let (Some(doc_map), Some(filter_map)) = (doc.as_object(), filter.as_object()) {
-        for (key, val) in filter_map {
-            if doc_map.get(key) != Some(val) {
-                return false;
-            }
-        }
-        true
-    } else {
-        false
-    }
+/// No-op for now
+fn filter_match(_doc: &Value, _filter: &Value) -> bool {
+    false
 }
