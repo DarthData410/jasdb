@@ -41,3 +41,20 @@ pub fn save_toc(file: &mut File, toc: &TocMap) -> std::io::Result<()> {
     file.write_all(&serialized)?;
     Ok(())
 }
+
+/// Sets or updates the schema for a collection in the TOC.
+pub fn set_collection_schema(
+    file: &mut File,
+    collection: &str,
+    schema: &Value,
+) -> std::io::Result<()> {
+    let mut toc = load_toc(file)?;
+    let eof = file.seek(SeekFrom::End(0))?;
+    let entry = toc.entry(collection.to_string()).or_insert(TocEntry {
+        offset: eof,
+        schema: None,
+    });
+    entry.schema = Some(schema.clone());
+    save_toc(file, &toc)
+}
+
