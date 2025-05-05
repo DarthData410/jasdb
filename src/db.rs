@@ -49,11 +49,6 @@ pub fn insert(db_path: &str, collection: &str, doc: &Value) -> Result<()> {
     file.write_all(&len.to_le_bytes())?;
     file.write_all(&raw)?;
 
-    if !toc.contains_key(collection) {
-        toc.insert(collection.to_string(), TocEntry { offset, schema: None });
-        save_toc(&mut file, &toc)?;
-    }
-
     Ok(())
 }
 
