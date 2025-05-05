@@ -1,23 +1,38 @@
 use anyhow::Result;
 use serde_json::Value;
 use std::fs::{OpenOptions};
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{Read, Write};
 use std::path::Path;
+
+/// Create a new JasDB file with header.
+/// Writes magic bytes to identify file format and version.
+pub fn create(db_path: &str) -> Result<()> {
+    // Only create if it doesn't exist
+    if Path::new(db_path).exists() {
+        println!("⚠️ JasDB file already exists: {}", db_path);
+        return Ok(());
+    }
+
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(db_path)?;
+
+    // Write a simple header (magic bytes + version)
+    file.write_all(b"JASDB01\n")?;
+    Ok(())
+}
 
 /// Inserts a JSON document into the specified collection
 /// in the given JasDB file. Appends in plain text (JSON lines format for now).
 pub fn insert(db_path: &str, collection: &str, doc: &Value) -> Result<()> {
-    // Open or create the .jasdb file for appending
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
         .open(db_path)?;
 
-    // For now, prefix each entry with the collection name
-    // This will be used to simulate collection segments
     let line = format!("{{\"__collection\":\"{}\",\"doc\":{}}}\n", collection, serde_json::to_string(doc)?);
     file.write_all(line.as_bytes())?;
-
     Ok(())
 }
 
