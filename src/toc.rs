@@ -48,14 +48,24 @@ pub fn set_collection_schema(
     collection: &str,
     schema: &Value,
 ) -> std::io::Result<()> {
-    file.seek(SeekFrom::Start(0))?; // Ensure clean load
+    // Load TOC from reserved space
+    file.seek(SeekFrom::Start(HEADER_MAGIC_LEN as u64))?;
     let mut toc = load_toc(file)?;
-    let eof = file.seek(SeekFrom::End(0))?;
-    let mut entry = toc.get(&collection.to_string()).cloned().unwrap_or(TocEntry {
-        offset: eof,
-        schema: None,
-    });
-    entry.schema = Some(schema.clone());
-    toc.insert(collection.to_string(), entry);    
+
+    // Reuse existing offset or create new one
+    let offset = toc
+        .get(collection)
+        .map(|entry| entry.offset)
+        .unwrap_or_else(|| file.seek(SeekFrom::End(0)).unwrap());
+
+    // Replace or insert entry with schema
+    toc.insert(
+        collection.to_string(),
+        TocEntry {
+            offset,
+            schema: Some(schema.clone()),
+        },
+    );
+
     save_toc(file, &toc)
 }
