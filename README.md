@@ -31,7 +31,31 @@ Designed specifically for **Node.js microservices**, JasDB combines:
 
 ---
 
-## 🚀 Quick Start
+## 🚀 .jasdb File structure
 
-```bash
-npm install jasdb
+[Header]
+  - Version
+  - Global settings
+  - Encryption info
+
+[TOC - Table of Contents]
+  - Collection names
+  - Offsets to data blocks
+  - Index info
+  - Permissions
+
+[Data Blocks]
+  - Collection: apples → [binary doc1][doc2]...
+  - Collection: bananas → [binary doc1][doc2]...
+
+[Index Section]
+  - Map of field → offset (B-tree index)
+
+[Permissions / Views]
+  - Role → Collection → Allowed fields/filters
+
+[Footer]
+  - Hash/checksum
+  - File signature
+
+
