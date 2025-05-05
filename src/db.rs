@@ -33,6 +33,15 @@ pub fn insert(db_path: &str, collection: &str, doc: &Value) -> Result<()> {
 
     let mut toc = load_toc(&mut file)?;
 
+    // ✅ Enforce schema if present
+    if let Some(entry) = toc.get(collection) {
+        if let Some(schema) = &entry.schema {
+            if !crate::utils::validate_against_schema(doc, schema) {
+                anyhow::bail!("Document does not match collection schema");
+            }
+        }
+    }
+
     let offset = file.seek(SeekFrom::End(0))?;
     let raw = serde_json::to_vec(doc)?;
     let len = raw.len() as u32;

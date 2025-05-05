@@ -7,7 +7,7 @@ use anyhow::Result;
 
 /// Command-line interface for JasDB
 #[derive(Parser)]
-#[command(name = "jasdb", version = "0.1.0", about = "JasDB CLI")]
+#[command(name = "jasdb", version = env!("CARGO_PKG_VERSION"), about = "JasDB CLI")]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -84,6 +84,10 @@ enum Commands {
         #[arg(short = 'p', long, default_value = "jasdb.jasdb")]
         file: String,
     },
+
+    /// Show version and banner
+    #[command(name = "version", alias = "v")]
+    Version,
 }
 
 fn main() -> Result<()> {
@@ -94,7 +98,7 @@ fn main() -> Result<()> {
             db::create(&file)?;
             utils::print_ferris();
             println!("✅ Created new JasDB file: {}", file);
-        }        
+        }
         Commands::Insert { collection, data, file } => {
             let doc: serde_json::Value = serde_json::from_str(&data)?;
             db::insert(&file, &collection, &doc)?;
@@ -120,6 +124,9 @@ fn main() -> Result<()> {
             let schema_json: serde_json::Value = serde_json::from_str(&schema)?;
             db::set_schema(&file, &collection, &schema_json)?;
             println!("📐 Schema defined for collection '{}'", collection);
+        }
+        Commands::Version => {
+            utils::print_ferris();
         }
     }
 
