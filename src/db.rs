@@ -4,7 +4,7 @@ use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
-use toc::{TocEntry, TocMap, load_toc, save_toc};
+use crate::toc::{TocEntry, TocMap, load_toc, save_toc};
 
 const HEADER_MAGIC: &[u8] = b"JASDB01\n";
 const TOC_RESERVED_SIZE: usize = 1024;
