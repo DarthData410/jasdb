@@ -51,10 +51,11 @@ pub fn set_collection_schema(
     file.seek(SeekFrom::Start(0))?; // Ensure clean load
     let mut toc = load_toc(file)?;
     let eof = file.seek(SeekFrom::End(0))?;
-    let entry = toc.entry(collection.to_string()).or_insert(TocEntry {
+    let mut entry = toc.get(&collection.to_string()).cloned().unwrap_or(TocEntry {
         offset: eof,
         schema: None,
     });
     entry.schema = Some(schema.clone());
+    toc.insert(collection.to_string(), entry);    
     save_toc(file, &toc)
 }
