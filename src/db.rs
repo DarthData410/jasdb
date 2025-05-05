@@ -68,22 +68,160 @@ pub fn insert(db_path: &str, collection: &str, doc: &Value) -> Result<()> {
     Ok(())
 }
 
-/// Placeholder for query logic
-pub fn query(_db_path: &str, _collection: &str, _filter: &Value) -> Result<Vec<Value>> {
-    anyhow::bail!("Query not yet implemented for binary format")
+/// Query documents from a collection based on TOC and basic filter
+pub fn query(db_path: &str, collection: &str, filter: &Value) -> Result<Vec<Value>> {
+    let mut file = File::open(db_path)?;
+
+    // Check header
+    let mut header = [0u8; 8];
+    file.read_exact(&mut header)?;
+    if &header != HEADER_MAGIC {
+        anyhow::bail!("Invalid JasDB header");
+    }
+
+    // Load TOC
+    let mut toc_buf = vec![0u8; TOC_RESERVED_SIZE];
+    file.read_exact(&mut toc_buf)?;
+    let toc: HashMap<String, u64> = bincode::deserialize(&toc_buf).unwrap_or_default();
+
+    let start = match toc.get(collection) {
+        Some(offset) => *offset,
+        None => return Ok(vec![]),
+    };
+
+    file.seek(SeekFrom::Start(start))?;
+    let mut results = vec![];
+
+    while let Ok(mut len_buf) = read_exact_4(&mut file) {
+        let len = u32::from_le_bytes(len_buf);
+        let mut doc_buf = vec![0u8; len as usize];
+        file.read_exact(&mut doc_buf)?;
+
+        let doc: Value = serde_json::from_slice(&doc_buf)?;
+        if filter_match(&doc, filter) {
+            results.push(doc);
+        }
+    }
+
+    Ok(results)
 }
 
-/// Placeholder for update logic
-pub fn update(_db_path: &str, _collection: &str, _filter: &Value, _update: &Value) -> Result<usize> {
-    anyhow::bail!("Update not yet implemented for binary format")
+/// Update matching documents with new value (rewrites file for now)
+pub fn update(db_path: &str, collection: &str, filter: &Value, update: &Value) -> Result<usize> {
+    let mut file = File::open(db_path)?;
+
+    let mut header = [0u8; 8];
+    file.read_exact(&mut header)?;
+    if &header != HEADER_MAGIC {
+        anyhow::bail!("Invalid JasDB header");
+    }
+
+    let mut toc_buf = vec![0u8; TOC_RESERVED_SIZE];
+    file.read_exact(&mut toc_buf)?;
+    let toc: HashMap<String, u64> = bincode::deserialize(&toc_buf).unwrap_or_default();
+
+    let start = match toc.get(collection) {
+        Some(offset) => *offset,
+        None => return Ok(0),
+    };
+
+    file.seek(SeekFrom::Start(start))?;
+    let mut docs = vec![];
+    let mut updated_count = 0;
+
+    while let Ok(mut len_buf) = read_exact_4(&mut file) {
+        let len = u32::from_le_bytes(len_buf);
+        let mut doc_buf = vec![0u8; len as usize];
+        file.read_exact(&mut doc_buf)?;
+
+        let mut doc: Value = serde_json::from_slice(&doc_buf)?;
+        if filter_match(&doc, filter) {
+            doc = update.clone();
+            updated_count += 1;
+        }
+        docs.push(doc);
+    }
+
+    // Rewrite segment
+    let mut file = OpenOptions::new().read(true).write(true).open(db_path)?;
+    file.seek(SeekFrom::Start(start))?;
+    for doc in &docs {
+        let raw = serde_json::to_vec(doc)?;
+        let len = raw.len() as u32;
+        file.write_all(&len.to_le_bytes())?;
+        file.write_all(&raw)?;
+    }
+
+    Ok(updated_count)
 }
 
-/// Placeholder for delete logic
-pub fn delete(_db_path: &str, _collection: &str, _filter: &Value) -> Result<usize> {
-    anyhow::bail!("Delete not yet implemented for binary format")
+/// Delete matching documents
+pub fn delete(db_path: &str, collection: &str, filter: &Value) -> Result<usize> {
+    let mut file = File::open(db_path)?;
+
+    let mut header = [0u8; 8];
+    file.read_exact(&mut header)?;
+    if &header != HEADER_MAGIC {
+        anyhow::bail!("Invalid JasDB header");
+    }
+
+    let mut toc_buf = vec![0u8; TOC_RESERVED_SIZE];
+    file.read_exact(&mut toc_buf)?;
+    let toc: HashMap<String, u64> = bincode::deserialize(&toc_buf).unwrap_or_default();
+
+    let start = match toc.get(collection) {
+        Some(offset) => *offset,
+        None => return Ok(0),
+    };
+
+    file.seek(SeekFrom::Start(start))?;
+    let mut kept = vec![];
+    let mut deleted = 0;
+
+    while let Ok(mut len_buf) = read_exact_4(&mut file) {
+        let len = u32::from_le_bytes(len_buf);
+        let mut doc_buf = vec![0u8; len as usize];
+        file.read_exact(&mut doc_buf)?;
+
+        let doc: Value = serde_json::from_slice(&doc_buf)?;
+        if !filter_match(&doc, filter) {
+            kept.push(doc);
+        } else {
+            deleted += 1;
+        }
+    }
+
+    let mut file = OpenOptions::new().read(true).write(true).open(db_path)?;
+    file.seek(SeekFrom::Start(start))?;
+    for doc in &kept {
+        let raw = serde_json::to_vec(doc)?;
+        let len = raw.len() as u32;
+        file.write_all(&len.to_le_bytes())?;
+        file.write_all(&raw)?;
+    }
+
+    Ok(deleted)
 }
 
-/// No-op for now
-fn filter_match(_doc: &Value, _filter: &Value) -> bool {
-    false
+/// Reads exactly 4 bytes and returns array
+fn read_exact_4(file: &mut File) -> std::io::Result<[u8; 4]> {
+    let mut buf = [0u8; 4];
+    match file.read_exact(&mut buf) {
+        Ok(_) => Ok(buf),
+        Err(e) => Err(e),
+    }
+}
+
+/// Very basic matcher: checks that all filter keys equal the values in the doc
+fn filter_match(doc: &Value, filter: &Value) -> bool {
+    if let (Some(doc_map), Some(filter_map)) = (doc.as_object(), filter.as_object()) {
+        for (key, val) in filter_map {
+            if doc_map.get(key) != Some(val) {
+                return false;
+            }
+        }
+        true
+    } else {
+        false
+    }
 }
