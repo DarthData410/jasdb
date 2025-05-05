@@ -8,7 +8,7 @@ mod toc;
 use toc::{TocEntry, TocMap, load_toc, save_toc};
 
 const HEADER_MAGIC: &[u8] = b"JASDB01\n";
-const TOC_RESERVED_SIZE: usize = 1024; // 1KB TOC space
+const TOC_RESERVED_SIZE: usize = 1024;
 
 /// Create new JasDB file with header and empty TOC
 pub fn create(db_path: &str) -> Result<()> {
@@ -26,7 +26,7 @@ pub fn create(db_path: &str) -> Result<()> {
 /// Insert document into collection and update TOC if needed
 pub fn insert(db_path: &str, collection: &str, doc: &Value) -> Result<()> {
     let mut file = OpenOptions::new().read(true).write(true).open(db_path)?;
-    
+
     let mut header = [0u8; 8];
     file.read_exact(&mut header)?;
     if &header != HEADER_MAGIC {
@@ -49,7 +49,7 @@ pub fn insert(db_path: &str, collection: &str, doc: &Value) -> Result<()> {
     Ok(())
 }
 
-/// Find documents matching a filter in a collection
+/// Query documents in a collection matching a filter
 pub fn query(db_path: &str, collection: &str, filter: &Value) -> Result<Vec<Value>> {
     let mut file = File::open(db_path)?;
 
@@ -81,7 +81,7 @@ pub fn query(db_path: &str, collection: &str, filter: &Value) -> Result<Vec<Valu
     Ok(results)
 }
 
-/// Update documents matching a filter
+/// Update documents in a collection matching a filter
 pub fn update(db_path: &str, collection: &str, filter: &Value, update: &Value) -> Result<usize> {
     let mut file = OpenOptions::new().read(true).write(true).open(db_path)?;
 
@@ -130,7 +130,7 @@ pub fn update(db_path: &str, collection: &str, filter: &Value, update: &Value) -
     Ok(updated)
 }
 
-/// Delete matching documents
+/// Delete documents in a collection matching a filter
 pub fn delete(db_path: &str, collection: &str, filter: &Value) -> Result<usize> {
     let mut file = OpenOptions::new().read(true).write(true).open(db_path)?;
 
@@ -175,6 +175,30 @@ pub fn delete(db_path: &str, collection: &str, filter: &Value) -> Result<usize> 
     file.write_all(&temp_buf)?;
 
     Ok(deleted)
+}
+
+/// Set or update the schema for a collection
+pub fn set_schema(db_path: &str, collection: &str, schema: &Value) -> Result<()> {
+    let mut file = OpenOptions::new().read(true).write(true).open(db_path)?;
+
+    let mut header = [0u8; 8];
+    file.read_exact(&mut header)?;
+    if &header != HEADER_MAGIC {
+        anyhow::bail!("Invalid JasDB header");
+    }
+
+    let mut toc = load_toc(&mut file)?;
+    match toc.get_mut(collection) {
+        Some(entry) => {
+            entry.schema = Some(schema.clone());
+        }
+        None => {
+            anyhow::bail!("Collection '{}' does not exist", collection);
+        }
+    }
+
+    save_toc(&mut file, &toc)?;
+    Ok(())
 }
 
 fn read_exact_4(file: &mut File) -> std::io::Result<[u8; 4]> {

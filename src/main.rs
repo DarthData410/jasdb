@@ -72,6 +72,18 @@ enum Commands {
         #[arg(short = 'p', long, default_value = "jasdb.jasdb")]
         file: String,
     },
+
+    /// Define or update a schema for a collection
+    Schema {
+        #[arg(short, long)]
+        collection: String,
+
+        #[arg(short, long)]
+        schema: String,
+
+        #[arg(short = 'p', long, default_value = "jasdb.jasdb")]
+        file: String,
+    },
 }
 
 fn main() -> Result<()> {
@@ -102,6 +114,11 @@ fn main() -> Result<()> {
             let filter_json: serde_json::Value = serde_json::from_str(&filter)?;
             let count = db::delete(&file, &collection, &filter_json)?;
             println!("🗑️ Deleted {} document(s) from '{}'", count, collection);
+        }
+        Commands::Schema { collection, schema, file } => {
+            let schema_json: serde_json::Value = serde_json::from_str(&schema)?;
+            db::set_schema(&file, &collection, &schema_json)?;
+            println!("📐 Schema defined for collection '{}'", collection);
         }
     }
 
