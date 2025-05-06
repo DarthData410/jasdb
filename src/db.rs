@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
-use crate::toc::{TocEntry, TocMap, load_toc, save_toc, set_collection_schema};
+use crate::toc::{ensure_collection_entry, load_toc, set_collection_schema, validate_collection_schema};
 
 const HEADER_MAGIC: &[u8] = b"JASDB01\n";
 const TOC_RESERVED_SIZE: usize = 1024;
@@ -31,17 +31,8 @@ pub fn insert(db_path: &str, collection: &str, doc: &Value) -> Result<()> {
         anyhow::bail!("Invalid JasDB header");
     }
 
-    let mut toc = load_toc(&mut file)?;
-
-    // ✅ Enforce schema if present
-    if let Some(entry) = toc.get(collection) {
-        println!("🔎 Schema for '{}': {:?}", collection, entry.schema);
-        if let Some(schema) = &entry.schema {
-            if !crate::utils::validate_against_schema(doc, schema) {
-                anyhow::bail!("Document does not match collection schema");
-            }
-        }
-    }
+    // ✅ Validate using schema if defined
+    validate_collection_schema(&mut file, collection, doc)?;
 
     let offset = file.seek(SeekFrom::End(0))?;
     let raw = serde_json::to_vec(doc)?;
@@ -49,12 +40,11 @@ pub fn insert(db_path: &str, collection: &str, doc: &Value) -> Result<()> {
     file.write_all(&len.to_le_bytes())?;
     file.write_all(&raw)?;
 
-    // ✅ Register collection in TOC if missing
-    crate::toc::ensure_collection_entry(&mut file, collection, offset)?;
+    ensure_collection_entry(&mut file, collection, offset)?;
+    println!("✅ Document inserted at offset {}", offset);
 
     Ok(())
 }
-
 
 /// Query documents in a collection matching a filter
 pub fn query(db_path: &str, collection: &str, filter: &Value) -> Result<Vec<Value>> {
@@ -134,6 +124,7 @@ pub fn update(db_path: &str, collection: &str, filter: &Value, update: &Value) -
     file.seek(SeekFrom::Start(offset))?;
     file.write_all(&buffer)?;
 
+    println!("🔁 Updated {} document(s) in '{}'", updated, collection);
     Ok(updated)
 }
 
@@ -181,6 +172,7 @@ pub fn delete(db_path: &str, collection: &str, filter: &Value) -> Result<usize> 
     file.seek(SeekFrom::Start(offset))?;
     file.write_all(&temp_buf)?;
 
+    println!("🗑️ Deleted {} document(s) from '{}'", deleted, collection);
     Ok(deleted)
 }
 

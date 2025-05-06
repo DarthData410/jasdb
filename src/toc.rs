@@ -11,7 +11,7 @@ const HEADER_MAGIC_LEN: usize = 8;
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct TocEntry {
     pub offset: u64,
-    pub schema: Option<Value>,
+    pub schema: Option<Vec<u8>>, // Store schema as raw bytes
 }
 
 pub type TocMap = HashMap<String, TocEntry>;
@@ -32,7 +32,7 @@ pub fn load_toc(file: &mut File) -> std::io::Result<TocMap> {
         Ok(map) => {
             println!("✅ TOC deserialized with {} collections", map.len());
             for (k, v) in &map {
-                println!("  • '{}': offset={}, schema={:?}", k, v.offset, v.schema);
+                println!("  • '{}': offset={}, schema_len={:?}", k, v.offset, v.schema.as_ref().map(|s| s.len()));
             }
             map
         },
@@ -50,7 +50,7 @@ pub fn save_toc(file: &mut File, toc: &TocMap) -> std::io::Result<()> {
     println!("💾 Saving TOC with {} collection(s)...", toc.len());
 
     for (k, v) in toc {
-        println!("  💾 '{}' -> offset: {}, schema: {:?}", k, v.offset, v.schema);
+        println!("  💾 '{}' -> offset: {}, schema_len: {:?}", k, v.offset, v.schema.as_ref().map(|s| s.len()));
     }
 
     file.seek(SeekFrom::Start(HEADER_MAGIC_LEN as u64))?;
@@ -81,15 +81,43 @@ pub fn set_collection_schema(
             end
         });
 
+    let schema_bytes = serde_json::to_vec(schema).unwrap();
+
     toc.insert(
         collection.to_string(),
         TocEntry {
             offset,
-            schema: Some(schema.clone()),
+            schema: Some(schema_bytes),
         },
     );
 
     save_toc(file, &toc)
+}
+
+/// Validates a document against the stored schema.
+pub fn validate_collection_schema(
+    file: &mut File,
+    collection: &str,
+    doc: &Value
+) -> std::io::Result<()> {
+    let toc = load_toc(file)?;
+    if let Some(entry) = toc.get(collection) {
+        if let Some(schema_bytes) = &entry.schema {
+            let schema: Value = match serde_json::from_slice(schema_bytes) {
+                Ok(v) => v,
+                Err(e) => {
+                    println!("❌ Failed to parse stored schema for '{}': {}", collection, e);
+                    return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Invalid schema"));
+                }
+            };
+            println!("🔎 Validating doc against schema for '{}': {}", collection, schema);
+            if !crate::utils::validate_against_schema(doc, &schema) {
+                println!("❌ Schema validation failed for collection '{}'", collection);
+                return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Document does not match schema"));
+            }
+        }
+    }
+    Ok(())
 }
 
 /// Ensures a collection has a TOC entry with offset if not already present.
