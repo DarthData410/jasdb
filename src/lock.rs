@@ -24,32 +24,42 @@ pub fn release_lock(file: &File) -> io::Result<()> {
 /// Wrapper for safe shared access with read-locking.
 pub fn with_shared_access<T>(
     path: &str,
-    f: impl FnOnce(&mut File) -> io::Result<T>,
+    f: impl FnOnce(&mut File) -> Result<T>,
 ) -> Result<T> {
-    let mut file = File::open(path).with_context(|| format!("Failed to open file '{}'", path))?;
-    acquire_shared_lock(&file).with_context(|| "Failed to acquire shared lock")?;
+    let mut file = File::open(path)
+        .with_context(|| format!("Failed to open file '{}' for shared access", path))?;
 
-    let result = f(&mut file).with_context(|| "Error during shared file operation")?;
+    acquire_shared_lock(&file)
+        .context("Failed to acquire shared file lock")?;
 
-    release_lock(&file).with_context(|| "Failed to release shared lock")?;
+    let result = f(&mut file)
+        .context("Error during shared file operation")?;
+
+    release_lock(&file)
+        .context("Failed to release shared file lock")?;
+
     Ok(result)
 }
 
 /// Wrapper for safe exclusive access with write-locking.
 pub fn with_exclusive_access<T>(
     path: &str,
-    f: impl FnOnce(&mut File) -> io::Result<T>,
+    f: impl FnOnce(&mut File) -> Result<T>,
 ) -> Result<T> {
     let mut file = OpenOptions::new()
         .read(true)
         .write(true)
         .open(path)
-        .with_context(|| format!("Failed to open file '{}'", path))?;
+        .with_context(|| format!("Failed to open file '{}' for exclusive access", path))?;
 
-    acquire_exclusive_lock(&file).with_context(|| "Failed to acquire exclusive lock")?;
+    acquire_exclusive_lock(&file)
+        .context("Failed to acquire exclusive file lock")?;
 
-    let result = f(&mut file).with_context(|| "Error during exclusive file operation")?;
+    let result = f(&mut file)
+        .context("Error during exclusive file operation")?;
 
-    release_lock(&file).with_context(|| "Failed to release exclusive lock")?;
+    release_lock(&file)
+        .context("Failed to release exclusive file lock")?;
+
     Ok(result)
 }
