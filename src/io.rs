@@ -7,6 +7,7 @@ use crate::utils::debug;
 /// File format constants
 pub const HEADER_MAGIC: &[u8] = b"JASDB01\n";
 pub const TOC_RESERVED_SIZE: usize = 1024;
+pub const HEADER_MAGIC_LEN: usize = 8;
 
 /// Reads exactly `len` bytes from a given offset.
 pub fn read_at(file: &mut File, offset: u64, len: usize) -> io::Result<Vec<u8>> {
@@ -17,11 +18,28 @@ pub fn read_at(file: &mut File, offset: u64, len: usize) -> io::Result<Vec<u8>> 
     Ok(buf)
 }
 
+/// Alias used in db.rs and toc.rs
+pub fn read_exact_at(file: &mut File, offset: u64, len: usize) -> io::Result<Vec<u8>> {
+    read_at(file, offset, len)
+}
+
 /// Writes the given buffer to the file at the specified offset.
 pub fn write_at(file: &mut File, offset: u64, buf: &[u8]) -> io::Result<()> {
     debug(&format!("💾 write_at: offset={}, len={}", offset, buf.len()));
     file.seek(SeekFrom::Start(offset))?;
     file.write_all(buf)
+}
+
+/// Alias used in db.rs and toc.rs
+pub fn write_exact_at(file: &mut File, offset: u64, buf: &[u8]) -> io::Result<()> {
+    write_at(file, offset, buf)
+}
+
+/// Returns the current EOF offset
+pub fn get_eof(file: &mut File) -> io::Result<u64> {
+    let end = file.seek(SeekFrom::End(0))?;
+    debug(&format!("📏 get_eof: {}", end));
+    Ok(end)
 }
 
 /// Reads 4 bytes from the current position and returns them as a fixed-size array.
