@@ -9,7 +9,7 @@ use crate::utils::debug;
 use crate::io::{
     read_exact_at, write_exact_at, get_eof, write_at, HEADER_MAGIC, TOC_RESERVED_SIZE
 };
-
+use crate::lock::{with_exclusive_access, with_shared_access};
 
 /// Create new JasDB file with header and empty TOC
 pub fn create(db_path: &str) -> Result<()> {
@@ -24,29 +24,28 @@ pub fn create(db_path: &str) -> Result<()> {
     Ok(())
 }
 
-
 /// Insert document into collection and update TOC if needed
 pub fn insert(db_path: &str, collection: &str, doc: &Value) -> Result<()> {
-    let mut file = OpenOptions::new().read(true).write(true).open(db_path)?;
+    with_exclusive_access(db_path, |file| {
+        let mut header = [0u8; 8];
+        file.read_exact(&mut header)?;
+        if &header != HEADER_MAGIC {
+            anyhow::bail!("Invalid JasDB header");
+        }
 
-    let mut header = [0u8; 8];
-    file.read_exact(&mut header)?;
-    if &header != HEADER_MAGIC {
-        anyhow::bail!("Invalid JasDB header");
-    }
+        validate_collection_schema(file, collection, doc)?;
 
-    validate_collection_schema(&mut file, collection, doc)?;
+        let offset = get_eof(file)?;
+        let raw = serde_json::to_vec(doc)?;
+        let len = raw.len() as u32;
+        write_exact_at(file, offset, &len.to_le_bytes())?;
+        write_exact_at(file, offset + 4, &raw)?;
 
-    let offset = get_eof(&mut file)?;
-    let raw = serde_json::to_vec(doc)?;
-    let len = raw.len() as u32;
-    write_exact_at(&mut file, offset, &len.to_le_bytes())?;
-    write_exact_at(&mut file, offset + 4, &raw)?;
+        ensure_collection_entry(file, collection, offset)?;
+        debug(&format!("✅ Document inserted at offset {}", offset));
 
-    ensure_collection_entry(&mut file, collection, offset)?;
-    debug(&format!("✅ Document inserted at offset {}", offset));
-
-    Ok(())
+        Ok(())
+    })
 }
 
 /// Query documents in a collection matching a filter
