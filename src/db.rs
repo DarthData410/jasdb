@@ -1,15 +1,15 @@
 use anyhow::Result;
 use serde_json::Value;
 use std::fs::{File, OpenOptions};
-use std::io::Read;
+use std::io::{Read, Write}; // ✅ Write added here
 use std::path::Path;
 
 use crate::toc::{ensure_collection_entry, load_toc, set_collection_schema, validate_collection_schema};
 use crate::utils::debug;
-use crate::io::{read_exact_at, write_exact_at, get_eof, HEADER_MAGIC};
-use crate::io::{write_at, read_at};
-use crate::io::{write_exact_4, read_exact_4};
-use crate::io::{write_u32_le, read_document, write_document};
+use crate::io::{
+    read_exact_at, write_exact_at, get_eof, write_at, HEADER_MAGIC, TOC_RESERVED_SIZE
+};
+
 
 /// Create new JasDB file with header and empty TOC
 pub fn create(db_path: &str) -> Result<()> {
@@ -144,7 +144,7 @@ pub fn delete(db_path: &str, collection: &str, filter: &Value) -> Result<usize> 
     let mut pos = offset;
 
     while let Ok(len_buf) = read_exact_at(&mut file, pos, 4) {
-        let len = u32::from_le_bytes(len_buf.try_into().unwrap()) as usize;
+        let len = u32::from_le_bytes(len_buf.clone().try_into().unwrap()) as usize;
         let buf = read_exact_at(&mut file, pos + 4, len)?;
 
         if let Ok(doc) = serde_json::from_slice::<Value>(&buf) {
