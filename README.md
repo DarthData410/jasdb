@@ -1,5 +1,17 @@
 # JasDB 🛡️
 
+``` bash
+     _~^~^~_
+ \) /  o o  \ (/ 
+  ' _   u   _ '
+   \ '-----' /
+      JasDB
+ Powered by Rust!
+
+ https://github.com/DarthData410/jasdb
+ v0.1.2
+```
+
 **JasDB** (JSON Access Secure Database) is a secure, embedded, JSON-native microservice database built for lightweight, high-performance data handling in modern server environments.
 
 Designed specifically for **Node.js microservices**, JasDB combines:
