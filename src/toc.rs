@@ -28,7 +28,7 @@ pub fn load_toc(file: &mut File) -> std::io::Result<TocMap> {
     let actual_len = toc_buf.iter().rposition(|&b| b != 0).map(|i| i + 1).unwrap_or(0);
     println!("📖 Non-zero TOC length: {}", actual_len);
 
-    let toc: TocMap = match bincode::deserialize(&toc_buf[..actual_len]) {
+    let toc: TocMap = match bincode::deserialize::<TocMap>(&toc_buf[..actual_len]) {
         Ok(map) => {
             println!("✅ TOC deserialized with {} collections", map.len());
             for (k, v) in &map {
