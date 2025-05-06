@@ -1,13 +1,12 @@
 use anyhow::Result;
 use serde_json::Value;
 use std::fs::{File, OpenOptions};
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::Read;
 use std::path::Path;
+
 use crate::toc::{ensure_collection_entry, load_toc, set_collection_schema, validate_collection_schema};
 use crate::utils::debug;
-
-const HEADER_MAGIC: &[u8] = b"JASDB01\n";
-const TOC_RESERVED_SIZE: usize = 1024;
+use crate::io::{read_exact_at, write_exact_at, get_eof, HEADER_MAGIC};
 
 /// Create new JasDB file with header and empty TOC
 pub fn create(db_path: &str) -> Result<()> {
@@ -18,7 +17,7 @@ pub fn create(db_path: &str) -> Result<()> {
 
     let mut file = File::create(db_path)?;
     file.write_all(HEADER_MAGIC)?;
-    file.write_all(&vec![0u8; TOC_RESERVED_SIZE])?;
+    file.write_all(&vec![0u8; crate::io::TOC_RESERVED_SIZE])?;
     Ok(())
 }
 
@@ -34,11 +33,11 @@ pub fn insert(db_path: &str, collection: &str, doc: &Value) -> Result<()> {
 
     validate_collection_schema(&mut file, collection, doc)?;
 
-    let offset = file.seek(SeekFrom::End(0))?;
+    let offset = get_eof(&mut file)?;
     let raw = serde_json::to_vec(doc)?;
     let len = raw.len() as u32;
-    file.write_all(&len.to_le_bytes())?;
-    file.write_all(&raw)?;
+    write_exact_at(&mut file, offset, &len.to_le_bytes())?;
+    write_exact_at(&mut file, offset + 4, &raw)?;
 
     ensure_collection_entry(&mut file, collection, offset)?;
     debug(&format!("✅ Document inserted at offset {}", offset));
@@ -62,17 +61,17 @@ pub fn query(db_path: &str, collection: &str, filter: &Value) -> Result<Vec<Valu
         None => return Ok(vec![]),
     };
 
-    file.seek(SeekFrom::Start(offset))?;
     let mut results = vec![];
+    let mut pos = offset;
 
-    while let Ok(len_buf) = read_exact_4(&mut file) {
-        let len = u32::from_le_bytes(len_buf);
-        let mut buf = vec![0u8; len as usize];
-        file.read_exact(&mut buf)?;
+    while let Ok(len_buf) = read_exact_at(&mut file, pos, 4) {
+        let len = u32::from_le_bytes(len_buf.try_into().unwrap());
+        let buf = read_exact_at(&mut file, pos + 4, len as usize)?;
         let doc: Value = serde_json::from_slice(&buf)?;
         if filter_match(&doc, filter) {
             results.push(doc);
         }
+        pos += 4 + len as u64;
     }
 
     Ok(results)
@@ -94,35 +93,27 @@ pub fn update(db_path: &str, collection: &str, filter: &Value, update: &Value) -
         None => return Ok(0),
     };
 
-    file.seek(SeekFrom::Start(offset))?;
     let mut updated = 0;
     let mut buffer = vec![];
+    let mut pos = offset;
 
-    while let Ok(_) = file.read_exact(&mut [0u8; 4]) {
-        file.seek(SeekFrom::Current(-4))?;
-
-        let mut len_buf = [0u8; 4];
-        if file.read_exact(&mut len_buf).is_err() { break; }
-
-        let len = u32::from_le_bytes(len_buf) as usize;
-        let mut buf = vec![0u8; len];
-        if file.read_exact(&mut buf).is_err() { break; }
-
+    while let Ok(len_buf) = read_exact_at(&mut file, pos, 4) {
+        let len = u32::from_le_bytes(len_buf.try_into().unwrap()) as usize;
+        let buf = read_exact_at(&mut file, pos + 4, len)?;
         let mut doc: Value = serde_json::from_slice(&buf)?;
         if filter_match(&doc, filter) {
             doc = update.clone();
             updated += 1;
         }
-
         let new_raw = serde_json::to_vec(&doc)?;
         let new_len = new_raw.len() as u32;
         buffer.extend(&new_len.to_le_bytes());
         buffer.extend(&new_raw);
+        pos += 4 + len as u64;
     }
 
     file.set_len(offset)?;
-    file.seek(SeekFrom::Start(offset))?;
-    file.write_all(&buffer)?;
+    write_exact_at(&mut file, offset, &buffer)?;
 
     debug(&format!("🔁 Updated {} document(s) in '{}'", updated, collection));
     Ok(updated)
@@ -144,19 +135,13 @@ pub fn delete(db_path: &str, collection: &str, filter: &Value) -> Result<usize> 
         None => return Ok(0),
     };
 
-    file.seek(SeekFrom::Start(offset))?;
     let mut temp_buf = vec![];
     let mut deleted = 0;
+    let mut pos = offset;
 
-    while let Ok(_) = file.read_exact(&mut [0u8; 4]) {
-        file.seek(SeekFrom::Current(-4))?;
-
-        let mut len_buf = [0u8; 4];
-        if file.read_exact(&mut len_buf).is_err() { break; }
-
-        let len = u32::from_le_bytes(len_buf) as usize;
-        let mut buf = vec![0u8; len];
-        if file.read_exact(&mut buf).is_err() { break; }
+    while let Ok(len_buf) = read_exact_at(&mut file, pos, 4) {
+        let len = u32::from_le_bytes(len_buf.try_into().unwrap()) as usize;
+        let buf = read_exact_at(&mut file, pos + 4, len)?;
 
         if let Ok(doc) = serde_json::from_slice::<Value>(&buf) {
             if filter_match(&doc, filter) {
@@ -166,11 +151,11 @@ pub fn delete(db_path: &str, collection: &str, filter: &Value) -> Result<usize> 
                 temp_buf.extend(&buf);
             }
         }
+        pos += 4 + len as u64;
     }
 
     file.set_len(offset)?;
-    file.seek(SeekFrom::Start(offset))?;
-    file.write_all(&temp_buf)?;
+    write_exact_at(&mut file, offset, &temp_buf)?;
 
     debug(&format!("🗑️ Deleted {} document(s) from '{}'", deleted, collection));
     Ok(deleted)
@@ -187,12 +172,6 @@ pub fn set_schema(db_path: &str, collection: &str, schema: &Value) -> Result<()>
 
     set_collection_schema(&mut file, collection, schema)?;
     Ok(())
-}
-
-fn read_exact_4(file: &mut File) -> std::io::Result<[u8; 4]> {
-    let mut buf = [0u8; 4];
-    file.read_exact(&mut buf)?;
-    Ok(buf)
 }
 
 fn filter_match(doc: &Value, filter: &Value) -> bool {

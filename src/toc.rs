@@ -3,12 +3,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{Read, Seek, SeekFrom, Write};
 
 use crate::utils::debug;
-
-const TOC_RESERVED_SIZE: usize = 1024;
-const HEADER_MAGIC_LEN: usize = 8;
+use crate::io::{read_at, write_at, get_eof, TOC_RESERVED_SIZE, HEADER_MAGIC_LEN};
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct TocEntry {
@@ -20,11 +17,9 @@ pub type TocMap = HashMap<String, TocEntry>;
 
 /// Loads TOC from reserved block. Returns empty if corrupted or empty.
 pub fn load_toc(file: &mut File) -> std::io::Result<TocMap> {
-    file.seek(SeekFrom::Start(HEADER_MAGIC_LEN as u64))?;
     debug(&format!("📥 Seeking to TOC start @ byte {}", HEADER_MAGIC_LEN));
 
-    let mut toc_buf = vec![0u8; TOC_RESERVED_SIZE];
-    file.read_exact(&mut toc_buf)?;
+    let toc_buf = read_at(file, HEADER_MAGIC_LEN as u64, TOC_RESERVED_SIZE)?;
     debug(&format!("📥 Read {} bytes from TOC area", TOC_RESERVED_SIZE));
 
     let actual_len = toc_buf.iter().rposition(|&b| b != 0).map(|i| i + 1).unwrap_or(0);
@@ -55,11 +50,10 @@ pub fn save_toc(file: &mut File, toc: &TocMap) -> std::io::Result<()> {
         debug(&format!("  💾 '{}' -> offset: {}, schema_len: {:?}", k, v.offset, v.schema.as_ref().map(|s| s.len())));
     }
 
-    file.seek(SeekFrom::Start(HEADER_MAGIC_LEN as u64))?;
     let mut serialized = bincode::serialize(toc).unwrap();
     serialized.resize(TOC_RESERVED_SIZE, 0); // Fixed 1KB for now
 
-    file.write_all(&serialized)?;
+    write_at(file, HEADER_MAGIC_LEN as u64, &serialized)?;
     debug("✅ TOC saved successfully.");
     Ok(())
 }
@@ -78,7 +72,7 @@ pub fn set_collection_schema(
         .get(collection)
         .map(|entry| entry.offset)
         .unwrap_or_else(|| {
-            let end = file.seek(SeekFrom::End(0)).unwrap();
+            let end = get_eof(file).unwrap();
             debug(&format!("📍 No existing offset for '{}', using EOF: {}", collection, end));
             end
         });
