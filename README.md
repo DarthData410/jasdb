@@ -19,19 +19,17 @@ Designed specifically for **Node.js microservices**, JasDB combines:
 - 🔒 **Security-first architecture**
 - 🧩 **Native JSON document storage**
 - ⚡ **Efficient binary encoding**
-- 🧵 **Built-in REST endpoint support**
-- 🛠️ **PM2 and BullMQ-friendly integration**
+- 🛠️ **NodeJS integration**
 
 ---
 
 ## ✨ Key Features
 
 - 📦 **JSON-native** — Insert, query, and update structured JSON documents directly.
-- 🔐 **End-to-end encryption** — AES-encrypted, binary-encoded data at rest.
-- 🧠 **Smart indexing** — Fast, flexible lookups on any nested JSON path.
-- 🌐 **RESTful endpoints** — Securely expose collections and views as API routes.
+- 🧠 **Document/Collection indexing** — Fast, flexible lookups on any nested JSON path.
 - 🧰 **Local-first** — Embedded or daemon modes ideal for VPS, edge, and container deployments.
 - 🧪 **Built-in testing harness** — Includes schema validation and query simulation tools.
+- 🔐 **End-to-end encryption** — AES-encrypted, binary-encoded data at rest options.
 
 ---
 
@@ -39,8 +37,7 @@ Designed specifically for **Node.js microservices**, JasDB combines:
 
 - Secure storage for task metadata and event logs
 - Local config and state store for distributed services
-- Firebase/MongoDB alternative for embedded/local JSON apps
-- Controlled, read-only REST views over internal data
+- Firebase/MongoDB alternative for embedded/local NodeJS/JSON apps
 
 ---
 
