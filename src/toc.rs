@@ -66,3 +66,19 @@ pub fn set_collection_schema(
     save_toc(file, &toc)
 }
 
+/// Ensures a collection has a TOC entry with offset if not already present.
+pub fn ensure_collection_entry(
+    file: &mut File,
+    collection: &str,
+    offset: u64,
+) -> std::io::Result<()> {
+    let mut toc = load_toc(file)?;
+    if !toc.contains_key(collection) {
+        toc.insert(collection.to_string(), TocEntry {
+            offset,
+            schema: None,
+        });
+        save_toc(file, &toc)?;
+    }
+    Ok(())
+}

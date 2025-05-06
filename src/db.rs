@@ -49,8 +49,12 @@ pub fn insert(db_path: &str, collection: &str, doc: &Value) -> Result<()> {
     file.write_all(&len.to_le_bytes())?;
     file.write_all(&raw)?;
 
+    // ✅ Register collection in TOC if missing
+    crate::toc::ensure_collection_entry(&mut file, collection, offset)?;
+
     Ok(())
 }
+
 
 /// Query documents in a collection matching a filter
 pub fn query(db_path: &str, collection: &str, filter: &Value) -> Result<Vec<Value>> {
