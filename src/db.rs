@@ -7,6 +7,9 @@ use std::path::Path;
 use crate::toc::{ensure_collection_entry, load_toc, set_collection_schema, validate_collection_schema};
 use crate::utils::debug;
 use crate::io::{read_exact_at, write_exact_at, get_eof, HEADER_MAGIC};
+use crate::io::{write_at, read_at};
+use crate::io::{write_exact_4, read_exact_4};
+use crate::io::{write_u32_le, read_document, write_document};
 
 /// Create new JasDB file with header and empty TOC
 pub fn create(db_path: &str) -> Result<()> {
@@ -16,10 +19,11 @@ pub fn create(db_path: &str) -> Result<()> {
     }
 
     let mut file = File::create(db_path)?;
-    file.write_all(HEADER_MAGIC)?;
-    file.write_all(&vec![0u8; crate::io::TOC_RESERVED_SIZE])?;
+    write_at(&mut file, 0, HEADER_MAGIC)?; // ✅ Use io::write_at
+    write_at(&mut file, HEADER_MAGIC.len() as u64, &vec![0u8; TOC_RESERVED_SIZE])?; // ✅ Write reserved TOC block
     Ok(())
 }
+
 
 /// Insert document into collection and update TOC if needed
 pub fn insert(db_path: &str, collection: &str, doc: &Value) -> Result<()> {
@@ -98,7 +102,7 @@ pub fn update(db_path: &str, collection: &str, filter: &Value, update: &Value) -
     let mut pos = offset;
 
     while let Ok(len_buf) = read_exact_at(&mut file, pos, 4) {
-        let len = u32::from_le_bytes(len_buf.try_into().unwrap()) as usize;
+        let len = u32::from_le_bytes(len_buf.clone().try_into().unwrap()) as usize;
         let buf = read_exact_at(&mut file, pos + 4, len)?;
         let mut doc: Value = serde_json::from_slice(&buf)?;
         if filter_match(&doc, filter) {
