@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -e
-DBFILE="swc.jasdb"
+DBFILE="test.jasdb"
 
 echo "🧪 Starting JasDB Tests..."
 
@@ -13,6 +13,9 @@ jasdb create -p $DBFILE
 
 # Set schema (testing new feature)
 jasdb schema -c apples -s '{"type": "string", "price": "number"}' -p $DBFILE
+
+# === DEBUG ON ===
+export JASDB_DEBUG=1
 
 # Insert valid docs
 jasdb insert -c apples -d '{"type":"Gala","price":1.99}' -p $DBFILE
@@ -27,6 +30,12 @@ jasdb find -c apples -f '{}' -p $DBFILE
 
 # Delete one
 jasdb delete -c apples -f '{"type":"Fuji"}' -p $DBFILE
+jasdb find -c apples -f '{}' -p $DBFILE
+
+# === DEBUG OFF ===
+unset JASDB_DEBUG
+
+# Confirming no debug output now
 jasdb find -c apples -f '{}' -p $DBFILE
 
 # Optional: try inserting invalid schema

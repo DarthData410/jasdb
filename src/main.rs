@@ -92,6 +92,7 @@ enum Commands {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+    utils::set_debug(true); // Enable debug logging
 
     match cli.command {
         Commands::Create { file } => {

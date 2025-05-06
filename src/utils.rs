@@ -1,10 +1,28 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::OnceLock;
+
+/// Global debug flag
+static DEBUG: OnceLock<AtomicBool> = OnceLock::new();
+
+/// Initializes the debug flag. Should be called from main.rs
+pub fn set_debug(enabled: bool) {
+    DEBUG.get_or_init(|| AtomicBool::new(enabled)).store(enabled, Ordering::Relaxed);
+}
+
+/// Prints a debug message if debug is enabled
+pub fn debug(msg: &str) {
+    if DEBUG.get().map_or(false, |flag| flag.load(Ordering::Relaxed)) {
+        println!("{}", msg);
+    }
+}
+
 /// Prints the Ferris crab ASCII art with JasDB branding
 pub fn print_ferris() {
     let version = env!("CARGO_PKG_VERSION");
     println!(
-r#"
+        r#"
      _~^~^~_
- \) /  o o  \ (/
+ \) /  o o  \ (/ 
   ' _   u   _ '
    \ '-----' /
       JasDB

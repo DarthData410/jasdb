@@ -4,6 +4,7 @@ use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 use crate::toc::{ensure_collection_entry, load_toc, set_collection_schema, validate_collection_schema};
+use crate::utils::debug;
 
 const HEADER_MAGIC: &[u8] = b"JASDB01\n";
 const TOC_RESERVED_SIZE: usize = 1024;
@@ -11,7 +12,7 @@ const TOC_RESERVED_SIZE: usize = 1024;
 /// Create new JasDB file with header and empty TOC
 pub fn create(db_path: &str) -> Result<()> {
     if Path::new(db_path).exists() {
-        println!("⚠️ JasDB file already exists: {}", db_path);
+        debug(&format!("⚠️ JasDB file already exists: {}", db_path));
         return Ok(());
     }
 
@@ -31,7 +32,6 @@ pub fn insert(db_path: &str, collection: &str, doc: &Value) -> Result<()> {
         anyhow::bail!("Invalid JasDB header");
     }
 
-    // ✅ Validate using schema if defined
     validate_collection_schema(&mut file, collection, doc)?;
 
     let offset = file.seek(SeekFrom::End(0))?;
@@ -41,7 +41,7 @@ pub fn insert(db_path: &str, collection: &str, doc: &Value) -> Result<()> {
     file.write_all(&raw)?;
 
     ensure_collection_entry(&mut file, collection, offset)?;
-    println!("✅ Document inserted at offset {}", offset);
+    debug(&format!("✅ Document inserted at offset {}", offset));
 
     Ok(())
 }
@@ -124,7 +124,7 @@ pub fn update(db_path: &str, collection: &str, filter: &Value, update: &Value) -
     file.seek(SeekFrom::Start(offset))?;
     file.write_all(&buffer)?;
 
-    println!("🔁 Updated {} document(s) in '{}'", updated, collection);
+    debug(&format!("🔁 Updated {} document(s) in '{}'", updated, collection));
     Ok(updated)
 }
 
@@ -172,7 +172,7 @@ pub fn delete(db_path: &str, collection: &str, filter: &Value) -> Result<usize> 
     file.seek(SeekFrom::Start(offset))?;
     file.write_all(&temp_buf)?;
 
-    println!("🗑️ Deleted {} document(s) from '{}'", deleted, collection);
+    debug(&format!("🗑️ Deleted {} document(s) from '{}'", deleted, collection));
     Ok(deleted)
 }
 
