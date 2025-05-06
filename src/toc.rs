@@ -23,7 +23,8 @@ pub fn load_toc(file: &mut File) -> std::io::Result<TocMap> {
     let mut toc_buf = vec![0u8; TOC_RESERVED_SIZE];
     file.read_exact(&mut toc_buf)?;
 
-    let toc: TocMap = match bincode::deserialize(&toc_buf) {
+    let actual_len = toc_buf.iter().rposition(|&b| b != 0).map(|i| i + 1).unwrap_or(0);
+    let toc: TocMap = match bincode::deserialize(&toc_buf[..actual_len]) {
         Ok(map) => map,
         Err(_) => HashMap::new(),
     };
