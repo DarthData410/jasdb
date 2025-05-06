@@ -166,15 +166,16 @@ pub fn delete(db_path: &str, collection: &str, filter: &Value) -> Result<usize> 
 
 /// Set or update the schema for a collection
 pub fn set_schema(db_path: &str, collection: &str, schema: &Value) -> Result<()> {
-    let mut file = OpenOptions::new().read(true).write(true).open(db_path)?;
-    let mut header = [0u8; 8];
-    file.read_exact(&mut header)?;
-    if &header != HEADER_MAGIC {
-        anyhow::bail!("Invalid JasDB header");
-    }
+    with_exclusive_access(db_path, |file| {
+        let mut header = [0u8; 8];
+        file.read_exact(&mut header)?;
+        if &header != HEADER_MAGIC {
+            anyhow::bail!("Invalid JasDB header");
+        }
 
-    set_collection_schema(&mut file, collection, schema)?;
-    Ok(())
+        set_collection_schema(file, collection, schema)?;
+        Ok(())
+    })
 }
 
 fn filter_match(doc: &Value, filter: &Value) -> bool {
