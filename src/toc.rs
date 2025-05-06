@@ -34,7 +34,7 @@ pub fn load_toc(file: &mut File) -> std::io::Result<TocMap> {
             map
         },
         Err(e) => {
-            debug(&format!("❌ Failed to deserialize TOC: {}", e));
+            debug(&format!("ℹ️ TOC not yet initialized (empty): {}", e));
             HashMap::new()
         }
     };
