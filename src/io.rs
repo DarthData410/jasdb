@@ -1,6 +1,6 @@
 // io.rs
 use std::fs::File;
-use std::io::{self, Read, Seek, SeekFrom, Write};
+use std::io::{self, Read, Write, Seek, SeekFrom};
 
 use crate::utils::debug;
 
@@ -18,28 +18,11 @@ pub fn read_at(file: &mut File, offset: u64, len: usize) -> io::Result<Vec<u8>> 
     Ok(buf)
 }
 
-/// Alias used in db.rs and toc.rs
-pub fn read_exact_at(file: &mut File, offset: u64, len: usize) -> io::Result<Vec<u8>> {
-    read_at(file, offset, len)
-}
-
 /// Writes the given buffer to the file at the specified offset.
 pub fn write_at(file: &mut File, offset: u64, buf: &[u8]) -> io::Result<()> {
     debug(&format!("💾 write_at: offset={}, len={}", offset, buf.len()));
     file.seek(SeekFrom::Start(offset))?;
     file.write_all(buf)
-}
-
-/// Alias used in db.rs and toc.rs
-pub fn write_exact_at(file: &mut File, offset: u64, buf: &[u8]) -> io::Result<()> {
-    write_at(file, offset, buf)
-}
-
-/// Returns the current EOF offset
-pub fn get_eof(file: &mut File) -> io::Result<u64> {
-    let end = file.seek(SeekFrom::End(0))?;
-    debug(&format!("📏 get_eof: {}", end));
-    Ok(end)
 }
 
 /// Reads 4 bytes from the current position and returns them as a fixed-size array.
@@ -80,4 +63,25 @@ pub fn write_document(file: &mut File, doc: &[u8]) -> io::Result<()> {
     debug(&format!("💾 write_document: length={}", len));
     write_u32_le(file, len)?;
     file.write_all(doc)
+}
+
+/// Returns the current end-of-file offset.
+pub fn get_eof(file: &mut File) -> io::Result<u64> {
+    let eof = file.seek(SeekFrom::End(0))?;
+    debug(&format!("📍 get_eof -> {}", eof));
+    Ok(eof)
+}
+
+/// Reads exactly `len` bytes from an offset, returns Vec<u8>.
+pub fn read_exact_at(file: &mut File, offset: u64, len: usize) -> io::Result<Vec<u8>> {
+    file.seek(SeekFrom::Start(offset))?;
+    let mut buf = vec![0u8; len];
+    file.read_exact(&mut buf)?;
+    Ok(buf)
+}
+
+/// Writes exactly `buf` to a given offset.
+pub fn write_exact_at(file: &mut File, offset: u64, buf: &[u8]) -> io::Result<()> {
+    file.seek(SeekFrom::Start(offset))?;
+    file.write_all(buf)
 }
