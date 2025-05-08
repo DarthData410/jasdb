@@ -9,7 +9,7 @@
  Powered by Rust!
 
  https://github.com/DarthData410/atollDB
- v0.2.0
+ v0.2.1
 ```
 
 **atollDB** (JSON Access Secure Database) is a secure, embedded, JSON-native microservice database built for lightweight, high-performance data handling in modern server environments.
@@ -44,9 +44,9 @@ Designed specifically for **Node.js microservices**, atollDB combines:
 
 ## 📘 atollDB Concepts vs SQL
 
-| SQL Concept | atollDB Equivalent          | Description                      |
+| SQL Concept | atollDB Equivalent        | Description                      |
 |-------------|---------------------------|----------------------------------|
-| Database    | `.adb` binary file      | One file per database            |
+| Database    | `.adb` binary file        | One file per database            |
 | Table       | **Collection**            | Stores grouped documents         |
 | Row         | **Entry** / **Document**  | Each JSON object                 |
 | Column      | JSON key-path             | Supports deep nested fields      |
