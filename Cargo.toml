@@ -1,6 +1,6 @@
 [package]
-name = "jasdb"
-version = "0.1.2"
+name = "atolldb"
+version = "0.2.0"
 edition = "2021"
 
 [dependencies]

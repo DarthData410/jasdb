@@ -1,9 +1,9 @@
-// Manages the static header region at the top of every .jasdb file.
+// Manages the static header region at the top of every .adb file.
 use std::fs::File;
 use crate::io::{read_at, write_at}; 
 use crate::utils::debug;
 
-pub const HEADER_MAGIC: &[u8; 14] = b"JASDB69-v0.2.0";
+pub const HEADER_MAGIC: &[u8; 14] = b"ADB0069-v0.2.0";
 pub const HEADER_SIZE: usize = 30;
 
 pub struct Header {

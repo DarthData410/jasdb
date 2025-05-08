@@ -1,20 +1,20 @@
-# JasDB
+# atollDB
 
 ``` bash
      _~^~^~_
  \) /  o o  \ (/ 
   ' _   u   _ '
    \ '-----' /
-      JasDB
+     atollDB
  Powered by Rust!
 
- https://github.com/DarthData410/jasdb
+ https://github.com/DarthData410/atollDB
  v0.2.0
 ```
 
-**JasDB** (JSON Access Secure Database) is a secure, embedded, JSON-native microservice database built for lightweight, high-performance data handling in modern server environments.
+**atollDB** (JSON Access Secure Database) is a secure, embedded, JSON-native microservice database built for lightweight, high-performance data handling in modern server environments.
 
-Designed specifically for **Node.js microservices**, JasDB combines:
+Designed specifically for **Node.js microservices**, atollDB combines:
 
 - 🧩 **Native JSON document storage**
 - ⚡ **Efficient binary encoding**
@@ -42,11 +42,11 @@ Designed specifically for **Node.js microservices**, JasDB combines:
 
 ---
 
-## 📘 JasDB Concepts vs SQL
+## 📘 atollDB Concepts vs SQL
 
-| SQL Concept | JasDB Equivalent          | Description                      |
+| SQL Concept | atollDB Equivalent          | Description                      |
 |-------------|---------------------------|----------------------------------|
-| Database    | `.jasdb` binary file      | One file per database            |
+| Database    | `.adb` binary file      | One file per database            |
 | Table       | **Collection**            | Stores grouped documents         |
 | Row         | **Entry** / **Document**  | Each JSON object                 |
 | Column      | JSON key-path             | Supports deep nested fields      |
@@ -57,21 +57,21 @@ Designed specifically for **Node.js microservices**, JasDB combines:
 
 ```bash
 # Create New DB:
-jasdb create -p json.jasdb
+atollDB create -p json.adb
 
 # Output:
-✅ Created new JasDB file: json.jasdb
+✅ Created new atollDB file: json.adb
 ```
 
 ```bash
 # Insert Documents:
-jasdb insert -c apples -d '{"type":"Gala","price":1.99}' -p json.jasdb
-jasdb insert -c apples -d '{"type":"Fuji","price":2.50}' -p json.jasdb
+atollDB insert -c apples -d '{"type":"Gala","price":1.99}' -p json.adb
+atollDB insert -c apples -d '{"type":"Fuji","price":2.50}' -p json.adb
 ```
 
 ```bash
 # Query Documents:
-jasdb find -c apples -f '{}' -p json.jasdb
+atollDB find -c apples -f '{}' -p json.adb
 
 # Output:
 [
@@ -82,7 +82,7 @@ jasdb find -c apples -f '{}' -p json.jasdb
 
 ```bash
 # Update Document:
-jasdb update -c apples -f '{"type":"Gala"}' -u '{"type":"Gala","price":2.25}' -p json.jasdb
+atollDB update -c apples -f '{"type":"Gala"}' -u '{"type":"Gala","price":2.25}' -p json.adb
 
 # Output:
 🔄 Updated 1 document(s) in 'apples'
@@ -90,7 +90,7 @@ jasdb update -c apples -f '{"type":"Gala"}' -u '{"type":"Gala","price":2.25}' -p
 
 ```bash
 # Delete Document:
-jasdb delete -c apples -f '{"type":"Fuji"}' -p json.jasdb
+atollDB delete -c apples -f '{"type":"Fuji"}' -p json.adb
 
 # Output:
 🗑️ Deleted 1 document(s) from 'apples'
@@ -165,4 +165,4 @@ filemanager.rs        ← Orchestrates high-level flow, marshals sections
 ---
 
 > Built for speed. Secured by design. Powered by simplicity.  
-> **JasDB** — Your JSON-native microservice database.
+> **atollDB** — Your JSON-native microservice database.

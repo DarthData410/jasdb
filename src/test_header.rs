@@ -1,10 +1,10 @@
 use std::fs::{File, OpenOptions};
 use std::path::Path;
-use jasdb::header::{write_header, read_header};
-use jasdb::utils::debug;
+use atolldb::header::{write_header, read_header};
+use atolldb::utils::debug;
 
 fn main() {
-    let path = Path::new("test_header.jasdb");
+    let path = Path::new("test_header.adb");
 
     let mut file = OpenOptions::new()
         .read(true)

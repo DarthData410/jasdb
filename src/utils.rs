@@ -23,10 +23,10 @@ pub fn print_ferris() {
  \) /  o o  \ (/ 
   ' _   u   _ '
    \ '-----' /
-      JasDB
+     atollDB
  Powered by Rust!
 
- https://github.com/DarthData410/jasdb
+ https://github.com/DarthData410/atolldb
  v{}
 "#,
         version
