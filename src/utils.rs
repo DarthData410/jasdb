@@ -11,9 +11,7 @@ pub fn set_debug(enabled: bool) {
 
 /// Prints a debug message if debug is enabled
 pub fn debug(msg: &str) {
-    if DEBUG.get().map_or(false, |flag| flag.load(Ordering::Relaxed)) {
-        println!("{}", msg);
-    }
+    println!("{}", msg); // Debug always ON
 }
 
 /// Prints the Ferris crab ASCII art with JasDB branding
