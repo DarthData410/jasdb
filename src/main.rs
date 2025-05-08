@@ -1,13 +1,13 @@
-use jasdb::db;
-use jasdb::crypto;
-use jasdb::utils;
+use atolldb::db;
+use atolldb::crypto;
+use atolldb::utils;
 
 use clap::{Parser, Subcommand};
 use anyhow::Result;
 
-/// Command-line interface for JasDB
+/// Command-line interface for atolldb
 #[derive(Parser)]
-#[command(name = "jasdb", version = env!("CARGO_PKG_VERSION"), about = "JasDB CLI")]
+#[command(name = "atolldb", version = env!("CARGO_PKG_VERSION"), about = "atolldb CLI")]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -16,9 +16,9 @@ struct Cli {
 /// All supported CLI commands
 #[derive(Subcommand)]
 enum Commands {
-    /// Create a new JasDB file with header
+    /// Create a new atolldb file with header
     Create {
-        #[arg(short = 'p', long, default_value = "jasdb.jasdb")]
+        #[arg(short = 'p', long, default_value = "atolldb.adb")]
         file: String,
     },
 
@@ -30,7 +30,7 @@ enum Commands {
         #[arg(short, long)]
         data: String,
 
-        #[arg(short = 'p', long, default_value = "jasdb.jasdb")]
+        #[arg(short = 'p', long, default_value = "atolldb.adb")]
         file: String,
     },
 
@@ -42,7 +42,7 @@ enum Commands {
         #[arg(short, long)]
         filter: String,
 
-        #[arg(short = 'p', long, default_value = "jasdb.jasdb")]
+        #[arg(short = 'p', long, default_value = "atolldb.adb")]
         file: String,
     },
 
@@ -57,7 +57,7 @@ enum Commands {
         #[arg(short, long)]
         update: String,
 
-        #[arg(short = 'p', long, default_value = "jasdb.jasdb")]
+        #[arg(short = 'p', long, default_value = "atolldb.adb")]
         file: String,
     },
 
@@ -69,7 +69,7 @@ enum Commands {
         #[arg(short, long)]
         filter: String,
 
-        #[arg(short = 'p', long, default_value = "jasdb.jasdb")]
+        #[arg(short = 'p', long, default_value = "atolldb.adb")]
         file: String,
     },
 
@@ -81,7 +81,7 @@ enum Commands {
         #[arg(short, long)]
         schema: String,
 
-        #[arg(short = 'p', long, default_value = "jasdb.jasdb")]
+        #[arg(short = 'p', long, default_value = "atolldb.adb")]
         file: String,
     },
 
@@ -98,7 +98,7 @@ fn main() -> Result<()> {
         Commands::Create { file } => {
             db::create(&file)?;
             utils::print_ferris();
-            println!("✅ Created new JasDB file: {}", file);
+            println!("✅ Created new atolldb file: {}", file);
         }
         Commands::Insert { collection, data, file } => {
             let doc: serde_json::Value = serde_json::from_str(&data)?;

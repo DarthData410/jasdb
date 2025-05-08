@@ -1,6 +1,6 @@
 [package]
-name = "jasdb"
-version = "0.1.2"
+name = "atolldb"
+version = "0.2.0"
 edition = "2021"
 
 [dependencies]
@@ -11,3 +11,7 @@ anyhow = "1.0"
 lazy_static = "1.4"
 bincode = "1.3"
 fs2 = "0.4"
+
+[[bin]]
+name = "test_header"
+path = "src/test_header.rs"

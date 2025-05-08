@@ -11,9 +11,7 @@ pub fn set_debug(enabled: bool) {
 
 /// Prints a debug message if debug is enabled
 pub fn debug(msg: &str) {
-    if DEBUG.get().map_or(false, |flag| flag.load(Ordering::Relaxed)) {
-        println!("{}", msg);
-    }
+    println!("{}", msg); // Debug always ON
 }
 
 /// Prints the Ferris crab ASCII art with JasDB branding
@@ -25,10 +23,10 @@ pub fn print_ferris() {
  \) /  o o  \ (/ 
   ' _   u   _ '
    \ '-----' /
-      JasDB
+     atollDB
  Powered by Rust!
 
- https://github.com/DarthData410/jasdb
+ https://github.com/DarthData410/atolldb
  v{}
 "#,
         version
