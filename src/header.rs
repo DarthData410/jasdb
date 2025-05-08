@@ -1,6 +1,5 @@
 // Manages the static header region at the top of every .jasdb file.
 use std::fs::File;
-use std::io::{Read, Write, Seek, SeekFrom};
 use crate::io::{read_at, write_at}; 
 use crate::utils::debug;
 
@@ -29,8 +28,8 @@ pub fn read_header(file: &mut File) -> std::io::Result<Header> {
         return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Invalid magic header"));
     }
 
-    let toc_start = u64::from_le_bytes(buf[14..20].try_into().unwrap());
-    let toc_end = u64::from_le_bytes(buf[22..28].try_into().unwrap());
+    let toc_start = u64::from_le_bytes(buf[14..22].try_into().unwrap());
+    let toc_end   = u64::from_le_bytes(buf[22..30].try_into().unwrap());
 
     Ok(Header {
         magic: *HEADER_MAGIC,
