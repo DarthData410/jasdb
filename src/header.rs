@@ -5,7 +5,7 @@ use crate::io::{read_at, write_at};
 use crate::utils::debug;
 
 pub const HEADER_MAGIC: &[u8; 14] = b"JASDB69-v0.2.0";
-pub const HEADER_SIZE: usize = 28;
+pub const HEADER_SIZE: usize = 30;
 
 pub struct Header {
     pub magic: [u8; 14],
@@ -25,12 +25,12 @@ pub fn write_header(file: &mut File, toc_start: u64, toc_end: u64) -> std::io::R
 
 pub fn read_header(file: &mut File) -> std::io::Result<Header> {
     let buf = read_at(file, 0, HEADER_SIZE)?;
-    if &buf[0..12] != HEADER_MAGIC {
+    if &buf[0..14] != HEADER_MAGIC {
         return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Invalid magic header"));
     }
 
-    let toc_start = u64::from_le_bytes(buf[12..20].try_into().unwrap());
-    let toc_end = u64::from_le_bytes(buf[20..28].try_into().unwrap());
+    let toc_start = u64::from_le_bytes(buf[14..20].try_into().unwrap());
+    let toc_end = u64::from_le_bytes(buf[22..28].try_into().unwrap());
 
     Ok(Header {
         magic: *HEADER_MAGIC,
