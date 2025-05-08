@@ -4,7 +4,7 @@ use std::io::{Read, Write, Seek, SeekFrom};
 use crate::io::{read_at, write_at}; 
 use crate::utils::debug;
 
-pub const HEADER_MAGIC: &[u8; 12] = b"JASDB69-v0.2";
+pub const HEADER_MAGIC: &[u8; 14] = b"JASDB69-v0.2.0";
 pub const HEADER_SIZE: usize = 28;
 
 pub struct Header {
