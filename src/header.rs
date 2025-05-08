@@ -8,7 +8,7 @@ pub const HEADER_MAGIC: &[u8; 14] = b"JASDB69-v0.2.0";
 pub const HEADER_SIZE: usize = 28;
 
 pub struct Header {
-    pub magic: [u8; 12],
+    pub magic: [u8; 14],
     pub toc_start: u64,
     pub toc_end: u64,
 }
