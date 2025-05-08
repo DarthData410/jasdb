@@ -4,11 +4,6 @@ use std::io::{self, Read, Write, Seek, SeekFrom};
 
 use crate::utils::debug;
 
-/// File format constants
-pub const HEADER_MAGIC: &[u8] = b"JASDB01\n";
-pub const TOC_RESERVED_SIZE: usize = 1024;
-pub const HEADER_MAGIC_LEN: usize = 8;
-
 /// Reads exactly `len` bytes from a given offset.
 pub fn read_at(file: &mut File, offset: u64, len: usize) -> io::Result<Vec<u8>> {
     debug(&format!("📥 read_at: offset={}, len={}", offset, len));
