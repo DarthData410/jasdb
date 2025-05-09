@@ -12,7 +12,7 @@
  v0.2.1
 ```
 
-**atollDB** (JSON Access Secure Database) is a secure, embedded, JSON-native microservice database built for lightweight, high-performance data handling in modern server environments.
+**atollDB** is a secure, embedded, JSON-native database designed and built for NodeJS applications. 
 
 Designed specifically for **Node.js microservices**, atollDB combines:
 
@@ -37,7 +37,6 @@ Designed specifically for **Node.js microservices**, atollDB combines:
 - NodeJ microservices/apps JSON datastore
 - Secure storage for task metadata and event logs
 - Local config and state store for distributed services
-- Firebase/MongoDB alternative for embedded/local NodeJS/JSON apps
 - A true JSON native db alternative to SQLite3 for development
 
 ---
