@@ -96,34 +96,34 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::Create { file } => {
-            db::create(&file)?;
+            //db::create(&file)?;
             utils::print_ferris();
             println!("✅ Created new atolldb file: {}", file);
         }
         Commands::Insert { collection, data, file } => {
             let doc: serde_json::Value = serde_json::from_str(&data)?;
-            db::insert(&file, &collection, &doc)?;
+            //db::insert(&file, &collection, &doc)?;
             println!("✅ Document inserted into '{}'", collection);
         }
         Commands::Find { collection, filter, file } => {
             let query: serde_json::Value = serde_json::from_str(&filter)?;
-            let results = db::query(&file, &collection, &query)?;
-            println!("📦 Results:\n{}", serde_json::to_string_pretty(&results)?);
+            //let results = db::query(&file, &collection, &query)?;
+            //println!("📦 Results:\n{}", serde_json::to_string_pretty(&results)?);
         }
         Commands::Update { collection, filter, update, file } => {
             let filter_json: serde_json::Value = serde_json::from_str(&filter)?;
             let update_json: serde_json::Value = serde_json::from_str(&update)?;
-            let count = db::update(&file, &collection, &filter_json, &update_json)?;
-            println!("🔁 Updated {} document(s) in '{}'", count, collection);
+            //let count = db::update(&file, &collection, &filter_json, &update_json)?;
+            //println!("🔁 Updated {} document(s) in '{}'", count, collection);
         }
         Commands::Delete { collection, filter, file } => {
             let filter_json: serde_json::Value = serde_json::from_str(&filter)?;
-            let count = db::delete(&file, &collection, &filter_json)?;
-            println!("🗑️ Deleted {} document(s) from '{}'", count, collection);
+            //let count = db::delete(&file, &collection, &filter_json)?;
+            //println!("🗑️ Deleted {} document(s) from '{}'", count, collection);
         }
         Commands::Schema { collection, schema, file } => {
             let schema_json: serde_json::Value = serde_json::from_str(&schema)?;
-            db::set_schema(&file, &collection, &schema_json)?;
+            //db::set_schema(&file, &collection, &schema_json)?;
             println!("📐 Schema defined for collection '{}'", collection);
         }
         Commands::Version => {
