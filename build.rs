@@ -1,3 +1,3 @@
 fn main() {
-    println!("cargo:rustc-env=PREFIX=ADB0070-v");
+    println!("cargo:rustc-env=PREFIX=ADB0069-v");
 }
