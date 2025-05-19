@@ -7,7 +7,7 @@ use crate::utils::debug;
 // Pull the version number at compile time from Cargo.toml
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 // Compose the magic string at runtime
-const PREFIX: &str = env!("CARGO_PKG_PREFIX");
+const PREFIX: &str = env!("PREFIX");
 
 pub const HEADER_SIZE: usize = 14 + 8 + 8;
 
