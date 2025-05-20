@@ -1,6 +1,8 @@
 use std::fs::{File, OpenOptions};
 use std::path::Path;
 use std::io::Result;
+use crate::lock::{with_exclusive_access, with_shared_access};
+use crate::io::{read_at, write_at, get_eof};
 
 use crate::header::{Header, write_header, read_header};
 use crate::section::Section;
@@ -14,6 +16,9 @@ pub struct FileSystem {
     header: Header,
     /// Current file size
     size: u64,
+
+    /// In-memory TOC cache
+    toc: TableOfContents,
 }
 
 impl FileSystem {
@@ -40,6 +45,7 @@ impl FileSystem {
             file,
             header,
             size,
+            toc: TableOfContents::new(), // Initialize empty TOC
         })
     }
 
@@ -57,6 +63,7 @@ impl FileSystem {
             file,
             header,
             size,
+            toc: TableOfContents::new(), // Initialize empty TOC
         })
     }
 
@@ -74,6 +81,38 @@ impl FileSystem {
     pub fn update_toc_bounds(&mut self, start: u64, end: u64) -> Result<()> {
         write_header(&mut self.file, start, end)?;
         self.header = read_header(&mut self.file)?;
+        Ok(())
+    }
+
+    /// Allocates a new collection section
+    pub fn create_collection(&mut self, name: &str, schema: Option<Vec<u8>>) -> Result<()> {
+        let section_start = get_eof(self.get_file())?;
+        
+        // Create TOC entry for the new collection
+        let entry = TocEntry {
+            section_type: SectionType::Collection,
+            offset: section_start,
+            length: 0,
+            schema,
+            metadata: HashMap::new(),
+        };
+        
+        self.toc.add_entry(name.to_string(), entry);
+        self.write_toc()?;
+        Ok(())
+    }
+
+    /// Writes the current TOC to disk
+    fn write_toc(&mut self) -> Result<()> {
+        let toc_start = get_eof(self.get_file())?;
+        let toc_bytes = bincode::serialize(&self.toc)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        
+        write_at(self.get_file(), toc_start, &toc_bytes)?;
+        let toc_end = get_eof(self.get_file())?;
+        
+        // Update header with new TOC bounds
+        self.update_toc_bounds(toc_start, toc_end)?;
         Ok(())
     }
 }
